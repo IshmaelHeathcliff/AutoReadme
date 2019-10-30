@@ -9,17 +9,62 @@ namespace AutoSummary
     {
         static StringBuilder _summary = new StringBuilder();
         static bool _isRoot = true;
-        static String _tab = "    ";
-        static int _tabCount = 0;
+        static int _level = 2;
+        static Stack<string> _dirStack = new Stack<string>();
 
-        public static void AutoSummary(string dir)
+
+        static bool CheckNameIgnore(string name)
+        {
+            var nameIgnore = new List<string>
+            {
+                "SUMMARY.md",
+                "README.md",
+                "readme.md",
+                "readme.txt",
+                "assets",
+                "photos",
+                ".git"
+            };
+            
+            foreach (string n in nameIgnore)
+            {
+                if (name == n) return true;
+            }
+
+            return false;
+        }
+
+        static void DirectorySummary(FileSystemInfo fsInfo)
+        {
+            for (int i = 0; i < _level; i++) _summary.Append("#");
+            _summary.Append($" {fsInfo.Name}\n\n");
+            _level += 1;
+            _dirStack.Push(_dirStack.Peek() + fsInfo.Name + "\\");
+        }
+
+        static void FileSummary(FileSystemInfo fsInfo)
+        {
+            string fileName = fsInfo.Name.Split(new[] {".md"}, StringSplitOptions.RemoveEmptyEntries)[0];
+            string dirName = _dirStack.Peek();
+            _summary.Append($"- [{fileName}]({dirName}{fsInfo.Name})\n");
+        }
+
+        static void AutoSummary(string dir)
         {
             var dirInfo = new DirectoryInfo(dir);
 
 
             if (_isRoot)
             {
-                _summary.Append("# SUMMARY\n");
+                _summary.Append("## Introduction\n\n");
+
+                using (var reader = new StreamReader("readme.txt"))
+                {
+                    _summary.Append(reader.ReadToEnd() + "\n\n");
+                }
+                
+                _dirStack.Push("");
+                
                 _isRoot = false;
             }
             
@@ -27,32 +72,28 @@ namespace AutoSummary
 
             foreach (FileSystemInfo fsInfo in subDirsAndFilesInfo)
             {
+                if (CheckNameIgnore(fsInfo.Name)) continue;
+
                 if (fsInfo is DirectoryInfo)
                 {
-                    if (fsInfo.Name == "assets") continue;
-
-                    for (int i = 0; i < _tabCount; i++) _summary.Append(_tab);
-                    _summary.Append($"- {fsInfo.Name}\n");
-                    _tabCount += 1;
+                    DirectorySummary(fsInfo);
                     AutoSummary(fsInfo.FullName);
                 }
                 else if(fsInfo.Name.EndsWith(".md"))
                 {
-                    if (fsInfo.Name == "SUMMARY.md") continue;
-                        for (int i = 0; i < _tabCount; i++) _summary.Append(_tab);
-                    _summary.Append(
-                        $"- [{fsInfo.Name.Split(new[]{".md"}, StringSplitOptions.RemoveEmptyEntries)[0]}]({dir}\\{fsInfo.Name})\n"
-                        );
+                    FileSummary(fsInfo);
                 }
             }
 
-            _tabCount -= 1;
+            _summary.Append("\n");
+            _level -= 1;
+            _dirStack.Pop();
         }
 
         public static void Main(string[] args)
         {
             AutoSummary(".");
-            var writer = new StreamWriter("SUMMARY.md");
+            var writer = new StreamWriter("README.md");
             using (writer)
             {
                 writer.Write(_summary.ToString());

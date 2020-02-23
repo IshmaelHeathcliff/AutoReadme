@@ -2,7 +2,7 @@
 
 此工具可自动创建目录下markdown文件的结构和引用
 
-将AutoSummary.exe放在目标文件夹中并双击运行
+将AutoReadme.exe放在目标文件夹中并双击运行
 
 结果将保存在README.md中
 
@@ -10,7 +10,12 @@
 
 会将readme.txt的内容放在Introduction下，请自行创建文件，建议将其加入.gitignore
 
-只会加入.md结尾的文件
+会加入以下结尾的文件
+
+-   md
+-   txt
+-   puml
+-   platuml
 
 会忽略如下文件和目录名
 

@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
-namespace AutoSummary
+namespace AutoReadme
 {
     class Program
     {
@@ -11,6 +12,12 @@ namespace AutoSummary
         static bool _isRoot = true;
         static int _level = 2;
         static Stack<string> _dirStack = new Stack<string>();
+        static string[] _extensions = {
+            ".md",
+            ".txt",
+            ".puml",
+            ".plantuml"
+        };
 
 
         static bool CheckNameIgnore(string name)
@@ -34,22 +41,42 @@ namespace AutoSummary
             return false;
         }
 
+        static bool CheckFileExtension(string name)
+        {
+            foreach (string e in _extensions)
+            {
+                if (name.EndsWith(e)) return true;
+            }
+
+            return false;
+
+        }
+
         static void DirectorySummary(FileSystemInfo fsInfo)
         {
             for (int i = 0; i < _level; i++) _summary.Append("#");
             _summary.Append($" {fsInfo.Name}\n\n");
             _level += 1;
-            _dirStack.Push(_dirStack.Peek() + fsInfo.Name + "\\");
+            _dirStack.Push(_dirStack.Peek() + fsInfo.Name + "/");
         }
 
         static void FileSummary(FileSystemInfo fsInfo)
         {
-            string fileName = fsInfo.Name.Split(new[] {".md"}, StringSplitOptions.RemoveEmptyEntries)[0];
+            string fileName = fsInfo.Name.Split(_extensions, StringSplitOptions.RemoveEmptyEntries)[0];
             string dirName = _dirStack.Peek();
             _summary.Append($"- [{fileName}]({dirName}{fsInfo.Name})\n");
         }
 
-        static void AutoSummary(string dir)
+        static int FsComparer(FileSystemInfo fileA, FileSystemInfo fileB)
+        {
+            int a, b;
+            a = fileA is DirectoryInfo ? 1 : 0;
+            b = fileB is DirectoryInfo ? 1 : 0;
+            if (a < b) return -1;
+            return a > b ? 1 : 0;
+        }
+
+        static void AutoReadme(string dir)
         {
             var dirInfo = new DirectoryInfo(dir);
 
@@ -69,6 +96,7 @@ namespace AutoSummary
             }
             
             FileSystemInfo[] subDirsAndFilesInfo = dirInfo.GetFileSystemInfos();
+            Array.Sort(subDirsAndFilesInfo, FsComparer);
 
             foreach (FileSystemInfo fsInfo in subDirsAndFilesInfo)
             {
@@ -76,10 +104,11 @@ namespace AutoSummary
 
                 if (fsInfo is DirectoryInfo)
                 {
+                    if (((DirectoryInfo) fsInfo).GetFileSystemInfos().Length == 0) continue;
                     DirectorySummary(fsInfo);
-                    AutoSummary(fsInfo.FullName);
+                    AutoReadme(fsInfo.FullName);
                 }
-                else if(fsInfo.Name.EndsWith(".md"))
+                else if(CheckFileExtension(fsInfo.Name))
                 {
                     FileSummary(fsInfo);
                 }
@@ -92,7 +121,7 @@ namespace AutoSummary
 
         public static void Main(string[] args)
         {
-            AutoSummary(".");
+            AutoReadme(".");
             var writer = new StreamWriter("README.md");
             using (writer)
             {

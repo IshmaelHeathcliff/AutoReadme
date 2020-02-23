@@ -2,9 +2,9 @@
 
 此工具可自动创建目录下markdown文件的结构和引用
 
-将AutoReadme.exe放在目标文件夹中并双击运行
-
 结果将保存在README.md中
+
+build后将bin/Debug/AutoReadme.exe复制到相应目录下双击
 
 ## Attention
 

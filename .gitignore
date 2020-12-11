@@ -1,3 +1,7 @@
 .idea/
 **/obj/
 **/bin/
+*.csproj
+*.sln
+.vscode/
+Properties/
